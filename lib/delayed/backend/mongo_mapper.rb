@@ -1,31 +1,35 @@
 # encoding: utf-8
 module Delayed
   module Backend
-    module Mongoid
+    module MongoMapper
       class Job
-        include ::Mongoid::Document
-        include ::Mongoid::Timestamps
+        include ::MongoMapper::Document
         include Delayed::Backend::Base
-        field :priority,    :type => Integer, :default => 0
-        field :attempts,    :type => Integer, :default => 0
-        field :handler,     :type => String
-        field :run_at,      :type => Time
-        field :locked_at,   :type => Time
-        field :locked_by,   :type => String
-        field :failed_at,   :type => Time
-        field :last_error,  :type => String
-        field :queue,       :type => String
+        set_collection_name 'delayed_jobs'
 
-        index ([[:locked_by, -1], [:priority, 1], [:run_at, 1]])
+        key :priority,   Integer, :default => 0
+        key :attempts,   Integer, :default => 0
+        key :handler,    String
+        key :run_at,     Time
+        key :locked_at,  Time
+        key :locked_by,  String
+        key :failed_at,  Time
+        key :last_error, String
+        key :queue,      String
+
 
         before_save :set_default_run_at
 
+        def self.create_indexes
+          ensure_index ([[:locked_by, -1], [:priority, 1], [:run_at, 1]])
+        end
+
         def self.before_fork
-          ::Mongoid.master.connection.close
+          ::MongoMapper.connection.close
         end
 
         def self.after_fork
-          ::Mongoid.master.connection.connect
+          ::MongoMapper.connection.connect
         end
 
         def self.db_time_now
@@ -36,7 +40,7 @@ module Delayed
         #
         # Uses Mongo's findAndModify operation to atomically pick and lock one
         # job from from the collection. findAndModify is not yet available
-        # directly thru Mongoid so go down to the Mongo Ruby driver instead.
+        # directly thru MongoMapper so go down to the Mongo Ruby driver instead.
         def self.reserve(worker, max_run_time = Worker.max_run_time)
           right_now = db_time_now
 
@@ -52,15 +56,15 @@ module Delayed
           ]
 
           begin
-            result = self.db.collection(self.collection.name).find_and_modify(
+            result = self.collection.find_and_modify(
               :query  => conditions,
               :sort   => [['locked_by', -1], ['priority', 1], ['run_at', 1]],
               :update => {"$set" => {:locked_at => right_now, :locked_by => worker.name}}
             )
 
-            # Return result as a Mongoid document.
-            # When Mongoid starts supporting findAndModify, this extra step should no longer be necessary.
-            self.find(:first, :conditions => {:_id => result["_id"]}) unless result.nil?
+            # Return result as a MongoMapper document.
+            # When MongoMapper starts supporting findAndModify, this extra step should no longer be necessary.
+            self.find(result["_id"]) unless result.nil?
           rescue Mongo::OperationFailure
             nil # no jobs available
           end
