@@ -16,7 +16,7 @@ module Delayed
         key :failed_at,  Time
         key :last_error, String
         key :queue,      String
-
+        timestamps!
 
         before_save :set_default_run_at
 
