@@ -14,11 +14,10 @@ module Psych
             raise Delayed::DeserializationError
           end
         else
-          visit_Psych_Nodes_Mapping_without_class(object)
+          visit_Psych_Nodes_Mapping_without_klass(object)
         end
       end
       alias_method_chain :visit_Psych_Nodes_Mapping, :klass
     end
   end
 end
-
