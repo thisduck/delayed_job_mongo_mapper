@@ -5,7 +5,7 @@
 Add the gems to your Gemfile:
 
     gem 'delayed_job'
-    gem 'delayed_job_mongo_mapper' :git => "git://github.com/thisduck/delayed_job_mongo_mapper.git"
+    gem 'delayed_job_mongo_mapper', :git => "git://github.com/thisduck/delayed_job_mongo_mapper.git"
 
 After running `bundle install`, create the indexes (and don't forget to do this on your production database):
 
